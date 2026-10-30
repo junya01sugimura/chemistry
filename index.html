@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>共通テスト化学 理論分野 完全演習アプリ</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f4f7f6; color: #333; margin: 0; padding: 20px; }
+        .container { max-width: 680px; margin: 0 auto; background: #ffffff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+        h1 { color: #1a365d; font-size: 1.6em; text-align: center; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+        .setup-screen, .quiz-screen, .result-screen { display: none; }
+        .active { display: block; }
+        .chapter-btn { display: block; width: 100%; padding: 14px 18px; margin: 8px 0; border: 1px solid #cbd5e1; border-radius: 8px; background-color: #f8fafc; color: #1e293b; font-size: 1em; font-weight: 600; cursor: pointer; text-align: left; transition: all 0.2s ease; }
+        .chapter-btn:hover { background-color: #e2e8f0; border-color: #94a3b8; }
+        .option-btn { display: block; width: 100%; padding: 12px 16px; margin: 8px 0; border: 1px solid #e2e8f0; border-radius: 6px; background-color: #ffffff; color: #334155; font-size: 1em; cursor: pointer; text-align: left; transition: background 0.2s; }
+        .option-btn:hover { background-color: #f1f5f9; }
+        .correct { background-color: #dcfce7 !important; color: #166534 !important; border-color: #86efac !important; font-weight: bold; }
+        .wrong { background-color: #fee2e2 !important; color: #991b1b !important; border-color: #fca5a5 !important; }
+        .nav-btn { display: block; width: 100%; padding: 14px; margin-top: 15px; border: none; border-radius: 8px; background-color: #2563eb; color: white; font-size: 1.05em; font-weight: bold; cursor: pointer; text-align: center; }
+        .nav-btn:hover { background-color: #1d4ed8; }
+        #progress { font-size: 0.9em; color: #64748b; font-weight: bold; margin-bottom: 10px; }
+        #explanation { background-color: #f1f5f9; padding: 15px; border-radius: 8px; border-left: 4px solid #3b82f6; margin-top: 15px; text-align: left; display: none; line-height: 1.6; }
+        .quiz-image { max-width: 100%; height: auto; margin: 15px auto; border: 1px solid #cbd5e1; border-radius: 8px; display: block; }
+    </style>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es6/mathjax.js"></script>
+</head>
+<body>
+
+<div class="container">
+    <h1>共通テスト化学 理論分野 完全マスター</h1>
+
+    <!-- 章選択画面 -->
+    <div id="setup-screen" class="setup-screen active">
+        <p style="text-align: center; color: #64748b; margin-bottom: 15px;">挑戦する章を選択してください（各10問）</p>
+        <button class="chapter-btn" onclick="startQuiz(1)">第1章：物質の状態と結晶構造</button>
+        <button class="chapter-btn" onclick="startQuiz(2)">第2章：気体の性質と状態方程式</button>
+        <button class="chapter-btn" onclick="startQuiz(3)">第3章：溶液の性質</button>
+        <button class="chapter-btn" onclick="startQuiz(4)">第4章：化学反応とエネルギー（エンタルピー）</button>
+        <button class="chapter-btn" onclick="startQuiz(5)">第5章：電池と電気分解</button>
+        <button class="chapter-btn" onclick="startQuiz(6)">第6章：反応速度と化学発光・触媒</button>
+        <button class="chapter-btn" onclick="startQuiz(7)">第7章：化学平衡とルシャトリエの原理</button>
+        <button class="chapter-btn" onclick="startQuiz(8)">第8章：電離平衡と溶解度積</button>
+    </div>
+
+    <!-- 演習画面 -->
+    <div id="quiz-screen" class="quiz-screen">
+        <div id="progress"></div>
+        <div id="question-text" style="font-size: 1.1em; font-weight: 600; text-align: left; line-height: 1.5;"></div>
+        <img id="question-image" class="quiz-image" src="" alt="問題の図" style="display: none;">
+        <div id="options-container"></div>
+        <div id="explanation"></div>
+        <button id="next-btn" class="nav-btn" onclick="nextQuestion()" style="display: none;">次の問題へ</button>
+    </div>
+
+    <!-- 結果画面 -->
+    <div id="result-screen" class="result-screen">
+        <h2 style="color: #1e293b;">演習完了！</h2>
+        <p id="score-text" style="font-size: 1.3em; font-weight: bold; color: #2563eb;"></p>
+        <button class="nav-btn" onclick="backToSetup()">章選択画面に戻る</button>
+    </div>
+</div>
+
+<script>
+// --- 全80問の全章問題データベース ---
+const quizData = {
+    // 【章1】物質の状態と結晶構造
+    1: [
+        {
+            question: "面心立方格子の単位格子に含まれる原子の数と、配位数（1つの原子に最も隣接している他の原子の数）の組み合わせとして正しいものを1つ選べ。",
+            image: "image_1.png",
+            options: ["1: 2個 / 8", "2: 4個 / 8", "3: 4個 / 12", "4: 2個 / 12"],
+            answer: 3,
+            explanation: "単位格子内の原子数は $8 \\times \\frac{1}{8} + 6 \\times \\frac{1}{2} = 4$ 個。配位数は 12 です。"
+        },
+        {
+            question: "原子量 $M$、格子定数 $a\\text{ [cm]}$、アボガドロ定数 $N_A\\text{ [/mol]}$ とするとき、体心立方格子の密度 $\\rho\\text{ [g/cm}^3\\text{]}$ を表す正しい式を選べ。",
+            options: ["1: \\(\\frac{2M}{a^3 N_A}\\)", "2: \\(\\frac{4M}{a^3 N_A}\\)", "3: \\(\\frac{M}{2a^3 N_A}\\)", "4: \\(\\frac{a^3 N_A}{2M}\\)"],
+            answer: 1,
+            explanation: "体心立方格子の単位格子には原子が 2 個含まれます。質量は $\\frac{2M}{N_A}\\text{ g}$ で体積は $a^3\\text{ cm}^3$ なので、密度 $\\rho = \\frac{2M}{a^3 N_A}$ となります。"
+        },
+        {
+            question: "結晶とその性質に関する記述として【最も適当なもの】を1つ選べ。",
+            options: ["1: イオン結晶は固体状態でも自由電子をもつため、電気をよく通す。", "2: 共有結合の結晶（ダイヤモンドや二酸化ケイ素）は、融点が非常に高く硬い。", "3: 分子結晶は構成粒子間に強い共有結合が働くため、融点が高い。", "4: 金属結晶は展性・延性をもたないが、へき開性を示す。"],
+            answer: 2,
+            explanation: "共有結合の結晶は原子同士が共有結合で空間網目状に結びついており高融点・極めて硬いです。"
+        },
+        {
+            question: "塩化ナトリウム $\\text{NaCl}$ 型の結晶格子において、1個の $\\text{Na}^+$ に最も隣接している $\\text{Cl}^-$ の数（配位数）はいくつか。",
+            options: ["1: 4個", "2: 6個", "3: 8個", "4: 12個"],
+            answer: 2,
+            explanation: "$\\text{NaCl}$ 型構造では、中心のイオンに対して前後左右上下の 6 個の異符号イオンが最隣接します。"
+        },
+        {
+            question: "塩化セシウム $\\text{CsCl}$ 型の結晶格子における $\\text{Cs}^+$ と $\text{Cl}^-$ のそれぞれの配位数はいくつか。",
+            options: ["1: 4個", "2: 6個", "3: 8個", "4: 12個"],
+            answer: 3,
+            explanation: "$\\text{CsCl}$ 型構造は単位格子の中心にあるイオンを8個の頂点イオンが囲むため、配位数は 8 です。"
+        },
+        {
+            question: "金属結晶の代表的な構造のうち、空間充填率が【最も高い（約74%）】組み合わせを選べ。",
+            options: ["1: 面心立方格子 と 六方最密構造", "2: 体心立方格子 と 面心立方格子", "3: 体心立方格子 と 六方最密構造", "4: 単純立方格子 と 面心立方格子"],
+            answer: 1,
+            explanation: "面心立方格子と六方最密構造は最密充填構造であり、充填率はともに約74%です。"
+        },
+        {
+            question: "物質の状態図において、気体・液体・固体の3つの状態が共存する点を何と呼ぶか。",
+            image: "image_2.png",
+            options: ["1: 臨界点", "2: 沸点", "3: 三重点", "4: 凝固点"],
+            answer: 3,
+            explanation: "状態図上で3つの状態線が交わり、固体・液体・気体が平衡状態で共存する点を「三重点」と呼びます。"
+        },
+        {
+            question: "状態図において、臨界点を超える温度・圧力領域で存在する、気体のように拡散し液体のように物質を溶かす状態を何と呼ぶか。",
+            options: ["1: 液晶", "2: プラズマ", "3: アモルファス", "4: 超臨界流体"],
+            answer: 4,
+            explanation: "臨界温度・臨界圧力を超えた状態を「超臨界流体」と呼び、抽出技術などに利用されます。"
+        },
+        {
+            question: "14族〜17族の水素化物の沸点変化において、$\\text{H}_2\\text{O}, \\text{HF}, \\text{NH}_3$ が同族の他の水素化物に比べて異常に沸点が高い理由を選べ。",
+            options: ["1: 分子量が著しく大きいため", "2: 分子間に水素結合が働くため", "3: 共有結合が切れるため", "4: 構成原子のイオン化エネルギーが大きいため"],
+            answer: 2,
+            explanation: "$\\text{F}, \\text{O}, \\text{N}$ の水素化物は電気陰性度が高く、分子間に強固な分子間力（水素結合）が働くため沸点が突出して高くなります。"
+        },
+        {
+            question: "粒子が規則正しく配列した結晶とは異なり、不規則に配列した固体（ガラスやゴムなど）を何と呼ぶか。",
+            options: ["1: 同素体", "2: 非晶質（アモルファス）", "3: 錯体", "4: 異性体"],
+            answer: 2,
+            explanation: "規則的な配列をもたない固体を「非晶質（アモルファス）」と呼び、明確な融点を持たない特徴があります。"
+        }
+    ],
+
+    // 【章2】気体の性質と状態方程式
+    2: [
+        {
+            question: "実在気体が理想気体の振る舞いに最も近づく条件を選べ。",
+            options: ["1: 高温・高圧", "2: 低温・低圧", "3: 高温・低圧", "4: 低温・高圧"],
+            answer: 3,
+            explanation: "高温（分子間力が無視できる）かつ低圧（分子自身の体積が無視できる）のとき、実在気体は理想気体に近づきます。"
+        },
+        {
+            question: "2.0 L の容器Aに $1.0 \\times 10^5\\text{ Pa}$ の窒素、3.0 L の容器Bに $2.0 \\times 10^5\\text{ Pa}$ の酸素を入れ、コックを開けて混合した（温度一定）。混合気体の全圧は何 Pa か。",
+            options: ["1: \\(1.2 \\times 10^5\\text{ Pa}\\)", "2: \\(1.6 \\times 10^5\\text{ Pa}\\)", "3: \\(3.0 \\times 10^5\\text{ Pa}\\)", "4: \\(3.2 \\times 10^5\\text{ Pa}\\)"],
+            answer: 2,
+            explanation: "全体積5.0 Lより、窒素分圧 $0.4 \\times 10^5\\text{ Pa}$、酸素分圧 $1.2 \\times 10^5\\text{ Pa}$。全圧は和で $1.6 \\times 10^5\\text{ Pa}$。"
+        },
+        {
+            question: "ある揮発性液体 $w\\text{ [g]}$ を加熱蒸発させ、圧力 $P\\text{ [Pa]}$、体積 $V\\text{ [L]}$、絶対温度 $T\\text{ [K]}$ で気体にした。この物質の分子量 $M$ を表す正しい式を選べ（気体定数 $R$）。",
+            options: ["1: \\(M = \\frac{wRT}{PV}\\)", "2: \\(M = \\frac{PV}{wRT}\\)", "3: \\(M = \\frac{wPV}{RT}\\)", "4: \\(M = \\frac{RT}{wPV}\\)"],
+            answer: 1,
+            explanation: "状態方程式 $PV = \\frac{w}{M}RT$ より、$M = \\frac{wRT}{PV}$ となります。"
+        },
+        {
+            question: "1 mol の実在気体における圧縮率因子 $Z = \\frac{PV}{RT}$ のグラフに関する記述として【正しいもの】を選べ。",
+            options: ["1: 理想気体では圧力に関わらず常に $Z = 1$ である。", "2: 高圧になるほど分子間力の影響が支配的になり、常に $Z < 1$ となる。", "3: 極めて低圧のとき、$Z$ は 0 に近づく。", "4: $Z < 1$ となるのは、分子自身の体積の影響が強いためである。"],
+            answer: 1,
+            explanation: "理想気体では常に $PV = RT$ が成り立つため $Z = 1$ です。"
+        },
+        {
+            question: "同温・同圧において、気体の拡散速度は分子量の平方根に反比例する。酸素（分子量32）の拡散速度は、水素（分子量2）の拡散速度の何倍か。",
+            options: ["1: 16倍", "2: 4倍", "3: 0.25倍（1/4倍）", "4: 0.0625倍（1/16倍）"],
+            answer: 3,
+            explanation: "速度比 $\\frac{v_{O_2}}{v_{H_2}} = \\sqrt{\\frac{2}{32}} = \\sqrt{\\frac{1}{16}} = 0.25$ 倍。"
+        },
+        {
+            question: "水上置換で気体を捕集した。$27^\\circ\\text{C}$ における全圧が $1.00 \\times 10^5\\text{ Pa}$、水蒸気圧が $3.60 \\times 10^3\\text{ Pa}$ のとき、乾燥気体の分圧は何 Pa か。",
+            options: ["1: \\(1.036 \\times 10^5\\text{ Pa}\\)", "2: \\(9.64 \\times 10^4\\text{ Pa}\\)", "3: \\(3.60 \\times 10^3\\text{ Pa}\\)", "4: \\(6.40 \\times 10^4\\text{ Pa}\\)"],
+            answer: 2,
+            explanation: "乾燥気体の分圧 $=$ 全圧 $-$ 水蒸気圧 $= 1.00 \\times 10^5 - 0.036 \\times 10^5 = 9.64 \\times 10^4\\text{ Pa}$。"
+        },
+        {
+            question: "$27^\\circ\\text{C}$、$1.0 \\times 10^5\\text{ Pa}$ で $3.0\\text{ L}$ の気体を、$127^\\circ\\text{C}$、$2.0 \\times 10^5\\text{ Pa}$ にしたとき、体積は何 L になるか。",
+            options: ["1: 2.0 L", "2: 1.5 L", "3: 4.0 L", "4: 0.5 L"],
+            answer: 1,
+            explanation: "ボイル・シャルルの法則 $\\frac{1.0 \\times 10^5 \\times 3.0}{300} = \\frac{2.0 \\times 10^5 \\times V_2}{400}$ より $V_2 = 2.0\\text{ L}$。"
+        },
+        {
+            question: "蒸気圧曲線において、液体の蒸気圧が外圧（大気圧）と等しくなる温度を何と呼ぶか。",
+            image: "image_3.png",
+            options: ["1: 融点", "2: 臨界点", "3: 沸点", "4: 昇華点"],
+            answer: 3,
+            explanation: "液体の蒸気圧が外圧に達した瞬間に内部からの気化（沸騰）が始まり、その温度を沸点と呼びます。"
+        },
+        {
+            question: "標準状態（$0^\\circ\\text{C}, 1.01 \\times 10^5\\text{ Pa}$）において、密度が $1.25\\text{ g/L}$ である気体の分子量として最も適当なものを選べ。",
+            options: ["1: 16", "2: 28", "3: 32", "4: 44"],
+            answer: 2,
+            explanation: "分子量 $M = 1.25\\text{ g/L} \\times 22.4\\text{ L/mol} = 28$（窒素 $\\text{N}_2$ など）です。"
+        },
+        {
+            question: "気体分子の平均運動エネルギーに関する記述として【正しいもの】を選べ。",
+            options: ["1: 気体分子の平均運動エネルギーは、絶対温度のみに比例する。", "2: 分子量が大きい気体ほど、同じ温度での平均運動エネルギーは大きくなる。", "3: 圧力を高くすると、平均運動エネルギーは増大する。", "4: 同じ温度であれば、水素分子と酸素分子の平均運動速度は等しい。"],
+            answer: 1,
+            explanation: "気体分子の平均運動エネルギー $\\bar{E} = \\frac{3}{2} k T$ は気体の種類に関わらず絶対温度のみに比例します。"
+        }
+    ],
+
+    // 【章3】溶液の性質
+    3: [
+        {
+            question: "不揮発性の非電解質を溶かした希薄溶液の性質に関する記述として【正しいもの】を選べ。",
+            options: ["1: 沸点上昇度は質量パーセント濃度に比例する。", "2: 凝固点降下度は溶質分子の大きさに比例する。", "3: 質量モル濃度が等しい場合、非電解質溶液より完全電離する NaCl 溶液の方が凝固点降下度は大きくなる。", "4: 純溶媒の沸点は、溶液の沸点よりも高くなる。"],
+            answer: 3,
+            explanation: "沸点上昇・凝固点降下は全溶質粒子の質量モル濃度に比例します。$\text{NaCl}$ は電離して粒子数が2倍になるため大きくなります。"
+        },
+        {
+            question: "ファントホッフの法則（$\\Pi = CRT$）における浸透圧 $\\Pi$ に関する記述として【誤っているもの】を選べ。",
+            options: ["1: 浸透圧はモル濃度 $C$ に比例する。", "2: 浸透圧は絶対温度 $T$ に比例する。", "3: 高分子化合物の分子量測定では、浸透圧法が測定精度が高い。", "4: 同質量パーセント濃度のとき、常に非電解質の方が電解質より浸透圧が大きい。"],
+            answer: 4,
+            explanation: "電解質は電離して粒子数が増えるため、同質量パーセント濃度であれば電解質溶液の方が浸透圧は大きくなります。"
+        },
+        {
+            question: "【グラフ問題】画像「溶解度曲線（Solubility Curve）」を参照。ある塩類の溶解度が $60^\circ\text{C}$ で $100\text{ g/水}$、$20^\circ\text{C}$ で $30\text{ g/水}$ である。$60^\circ\text{C}$ の飽和水溶液 $200\text{ g}$ を $20^\circ\text{C}$ まで冷却したときに析出する結晶の質量を選べ。",
+            image: "image_1.png",
+            options: ["1: 30 g", "2: 70 g", "3: 80 g", "4: 100 g"],
+            answer: 2,
+            explanation: "$60^\circ\text{C}$ の飽和水溶液 $200\text{ g}$ は「水 $100\text{ g} +$ 溶質 $100\text{ g}$」。$20^\circ\text{C}$ では水 $100\text{ g}$ に $30\text{ g}$ 溶けるため、析出量は $100 - 30 = 70\text{ g}$。"
+        },
+        {
+            question: "質量モル濃度の単位として正しいものを選べ。",
+            options: ["1: mol/L", "2: mol/kg", "3: g/L", "4: g/kg"],
+            answer: 2,
+            explanation: "質量モル濃度は「溶媒 1 kg 中の溶質のモル数（$\text{mol/kg}$）」です。"
+        },
+        {
+            question: "コロイド溶液に側方から強い光を当てると、光の通路が明るく輝いて見える現象を何と呼ぶか。",
+            options: ["1: ブラウン運動", "2: チンダル現象", "3: 透析", "4: 電気泳動"],
+            answer: 2,
+            explanation: "コロイド粒子による光の散乱現象を「チンダル現象」と呼びます。"
+        },
+        {
+            question: "親水コロイド溶液に多量の電解質を加えると、水和水が奪われて沈殿する現象を何と呼ぶか。",
+            options: ["1: 凝集", "2: 塩析", "3: 透析", "4: 膠着"],
+            answer: 2,
+            explanation: "親水コロイドに多量の電解質を加えて沈殿させる現象を「塩析」と呼びます。"
+        },
+        {
+            question: "水酸化鉄(III) $\\text{Fe(OH)}_3$ コロイド溶液に直流電圧をかけると陰極側に移動した。ここから分かる性質を選べ。",
+            options: ["1: コロイド粒子は正（プラス）に帯電している。", "2: コロイド粒子は負（マイナス）に帯電している。", "3: 疎水コロイドではない。", "4: 分子コロイドである。"],
+            answer: 1,
+            explanation: "陰極（マイナス極）に引き寄せられるため、コロイド粒子自身は正（プラス）に帯電しています。"
+        },
+        {
+            question: "ヘンリーの法則に関する記述として【正しいもの】を選べ。",
+            options: ["1: 溶解度の低い気体において、一定温度で一定量の溶媒に溶ける気体の「質量」は圧力に比例する。", "2: 溶解度の高い気体にのみ厳密に成り立つ。", "3: 一定温度・圧力で溶ける気体の「その圧力下での体積」は圧力に比例して大きくなる。", "4: 温度を高くするほど気体の溶解度は増加する。"],
+            answer: 1,
+            explanation: "難溶性気体において「溶ける質量は圧力に比例」します（体積はその圧力下では一定に保たれます）。"
+        },
+        {
+            question: "半透膜を用いてコロイド溶液から小さな分子やイオンを取り除く操作を何と呼ぶか。",
+            options: ["1: 抽出", "2: 昇華", "3: 透析", "4: 塩析"],
+            answer: 3,
+            explanation: "半透膜の孔をコロイド粒子が通過できないことを利用した精製操作を「透析」と呼びます。"
+        },
+        {
+            question: "不揮発性の溶質を溶かした溶液の蒸気圧が純溶媒より低くなる現象（蒸気圧降下）の説明として最も適当なものを選べ。",
+            options: ["1: 溶液表面に溶質粒子が存在し、溶媒分子の蒸発が妨げられるため。", "2: 溶質粒子が気化して分圧をもつため。", "3: 溶液の温度が下がるため。", "4: 溶質と溶媒が反応して気体を発生するため。"],
+            answer: 1,
+            explanation: "液相表面の一部を不揮発性の溶質が占めることで、単位時間に飛び出す溶媒分子数が減少するためです。"
+        }
+    ],
+
+    // 【章4】化学反応とエネルギー
+    4: [
+        {
+            question: "新課程における「反応エンタルピー（$\\Delta H$）」の符号に関する記述として【正しいもの】を選べ。",
+            image: "image_4.png",
+            options: ["1: 発熱反応では $\\Delta H > 0$ となる。", "2: 吸熱反応では周囲から熱を吸収して体系のエネルギーが増加するため $\\Delta H > 0$ となる。", "3: 融解エンタルピーは常に負（$\\Delta H < 0$）をとる。", "4: 燃焼エンタルピーは常に正（$\\Delta H > 0$）をとる。"],
+            answer: 2,
+            explanation: "新課程表記では「熱を吸収して体系のエネルギーが増加する吸熱反応」を $\\Delta H > 0$（正）と定めます。"
+        },
+        {
+            question: "ヘスの法則（総熱量保存の法則）に関する記述として【正しいもの】を選べ。",
+            options: ["1: 反応エンタルピーの大きさは反応経路によって変化する。", "2: 初めの状態と終わりの状態が同じであれば、途中経過に関わらず反応エンタルピーの総和は一定である。", "3: 触媒を加えると $\\Delta H$ の絶対値は小さくなる。", "4: 固体の生成エンタルピーは常に 0 である。"],
+            answer: 2,
+            explanation: "始状態と終状態が決定していれば、途中の反応経路によらず $\\Delta H$ の総和は一定（エネルギー保存則）です。"
+        },
+        {
+            question: "化合物の生成エンタルピーを定義する際、生成エンタルピーを「0」とみなす基準となる物質を選べ。",
+            options: ["1: 同体積の気体化合物", "2: 最も安定な状態にある同素体単体", "3: 0℃ の水溶液", "4: すべての酸化物"],
+            answer: 2,
+            explanation: "常温・常圧で「最も安定な状態にある元素の単体（黒鉛や $\text{O}_2$ など）」の生成エンタルピーを 0 と規定します。"
+        },
+        {
+            question: "メタン $\\text{CH}_4$ の燃焼エンタルピー（$\\Delta H = -890\\text{ kJ/mol}$）を表す正しいエンタルピー変化の式を選べ。",
+            options: ["1: \\(\\text{CH}_4(\\text{気}) + 2\\text{O}_2(\\text{気}) \\rightarrow \\text{CO}_2(\\text{気}) + 2\\text{H}_2\\text{O}(\\text{液}) \\quad \\Delta H = -890\\text{ kJ}\\)", "2: \\(\\text{CH}_4(\\text{気}) + 2\\text{O}_2(\\text{気}) \\rightarrow \\text{CO}_2(\\text{気}) + 2\\text{H}_2\\text{O}(\\text{気}) \\quad \\Delta H = +890\\text{ kJ}\\)", "3: \\(2\\text{CH}_4(\\text{気}) + 4\\text{O}_2(\\text{気}) \\rightarrow 2\\text{CO}_2(\\text{気}) + 4\\text{H}_2\\text{O}(\\text{液}) \\quad \\Delta H = -890\\text{ kJ}\\)", "4: \\(\\text{CH}_4(\\text{気}) + \\text{O}_2(\\text{気}) \\rightarrow \\text{CO}(\\text{気}) + 2\\text{H}_2(\\text{気}) \\quad \\Delta H = -890\\text{ kJ}\\)"],
+            answer: 1,
+            explanation: "物質 1 mol が完全燃焼して最も安定な化合物（$\text{CO}_2$ 気体、$\text{H}_2\text{O}$ 液体）になる発熱変化です。"
+        },
+        {
+            question: "反応エンタルピー $\\Delta H$ を「結合エネルギー」を用いて求める正しい立式を選べ。",
+            options: ["1: \\(\\Delta H = (\\text{反応物の結合エネルギーの総和}) - (\\text{生成物の結合エネルギーの総和})\\)", "2: \\(\\Delta H = (\\text{生成物の結合エネルギーの総和}) - (\\text{反応物の結合エネルギーの総和})\\)", "3: \\(\\Delta H = (\\text{生成物の生成エンタルピーの総和}) - (\\text{反応物の生成エンタルピーの総和})\\)", "4: \\(\\Delta H = (\\text{反応物の生成エンタルピーの総和}) - (\\text{生成物の生成エンタルピーの総和})\\)"],
+            answer: 1,
+            explanation: "結合エネルギーは結合を切る吸熱量なので、$\\Delta H = (\\text{反応物}) - (\\text{生成物})$ となります。"
+        },
+        {
+            question: "イオン結晶 1 mol を気体状の離れ離れのイオンにするのに必要なエネルギーを何と呼ぶか。",
+            options: ["1: イオン化エネルギー", "2: 電子親和力", "3: 格子エネルギー", "4: 水和エンタルピー"],
+            answer: 3,
+            explanation: "固体イオン結晶を孤立した気体状イオンに解離させるエネルギーを「格子エネルギー」と呼びます。"
+        },
+        {
+            question: "強酸と強塩基の希薄水溶液の中和エンタルピーが酸・塩基の種類によらずほぼ一定（$\\Delta H \\approx -56.5\\text{ kJ/mol}$）になる理由を選べ。",
+            options: ["1: 中和の実質が \\(\\text{H}^+ + \\text{OH}^- \\rightarrow \\text{H}_2\\text{O}\\) だから。", "2: 塩の溶解エンタルピーがゼロだから。", "3: 水の比熱が非常に大きいから。", "4: 強酸・強塩基は完全電離しないから。"],
+            answer: 1,
+            explanation: "希薄水溶液中では完全電離しており、中和の本体がすべて水の生成反応になるためです。"
+        },
+        {
+            question: "硝酸アンモニウム $\\text{NH}_4\\text{NO}_3$ を大量の水に溶かすと水温が著しく低下した。溶解エンタルピー $\\Delta H$ の符号として正しいものを選べ。",
+            options: ["1: \\(\\Delta H > 0\\)（正）", "2: \\(\\Delta H < 0\\)（負）", "3: \\(\\Delta H = 0\\)", "4: 判定不能"],
+            answer: 1,
+            explanation: "水温低下＝周囲から熱を吸収する「吸熱反応」なので、$\\Delta H > 0$（正）となります。"
+        },
+        {
+            question: "水の「蒸発エンタルピー $\\Delta H_{vap}$」と「凝縮エンタルピー $\\Delta H_{cond}$」の関係を表す正しい式を選べ。",
+            options: ["1: \\(\\Delta H_{vap} = \\Delta H_{cond}\\)", "2: \\(\\Delta H_{vap} = -\\Delta H_{cond}\\)", "3: \\(\\Delta H_{vap} > \\Delta H_{cond}\\)", "4: \\(\\Delta H_{vap} + \\Delta H_{cond} = 1\\)"],
+            answer: 2,
+            explanation: "蒸発（吸熱）と凝縮（発熱）は大きさが等しく符号が反対（$\\Delta H_{vap} = -\\Delta H_{cond}$）になります。"
+        },
+        {
+            question: "炭素燃焼 $\\Delta H_1 = -394\\text{ kJ}$、一酸化炭素燃焼 $\\Delta H_2 = -283\\text{ kJ}$ のとき、$\\text{C} + \\frac{1}{2}\\text{O}_2 \\rightarrow \\text{CO}$ の反応エンタルピー $\\Delta H_3$ を表す式を選べ。",
+            options: ["1: \\(\\Delta H_3 = \\Delta H_1 - \\Delta H_2\\)", "2: \\(\\Delta H_3 = \\Delta H_2 - \\Delta H_1\\)", "3: \\(\\Delta H_3 = \\Delta H_1 + \\Delta H_2\\)", "4: \\(\\Delta H_3 = -\\Delta H_1 - \\Delta H_2\\)"],
+            answer: 1,
+            explanation: "目的反応＝（$\text{C}$ の燃焼）$-$（$\text{CO}$ の燃焼）より、$\\Delta H_3 = \\Delta H_1 - \\Delta H_2 = -111\\text{ kJ/mol}$。"
+        }
+    ],
+
+    // 【章5】電池と電気分解
+    5: [
+        {
+            question: "ダニエル電池（$\\text{(-) Zn | ZnSO}_4\\text{aq | CuSO}_4\\text{aq | Cu (+)}$）の負極（亜鉛極）で起こる反応式として正しいものを選べ。",
+            options: ["1: \\(\\text{Zn}^{2+} + 2\\text{e}^- \\rightarrow \\text{Zn}\\)", "2: \\(\\text{Zn} \\rightarrow \\text{Zn}^{2+} + 2\\text{e}^-\\)", "3: \\(\\text{Cu}^{2+} + 2\\text{e}^- \\rightarrow \\text{Cu}\\)", "4: \\(\\text{Cu} \\rightarrow \\text{Cu}^{2+} + 2\\text{e}^-\\)"],
+            answer: 2,
+            explanation: "負極では亜鉛が酸化されて溶け出す $\\text{Zn} \\rightarrow \\text{Zn}^{2+} + 2\\text{e}^-$ が起こります。"
+        },
+        {
+            question: "鉛蓄電池を「充電」する際、外部電源の「正極」に接続すべき鉛蓄電池側の電極を選べ。",
+            options: ["1: 負極（Pb）", "2: 正極（PbO2）", "3: どちらでもよい", "4: 硫酸電解液"],
+            answer: 2,
+            explanation: "充電の際は、電池の正極（$\text{PbO}_2$）を外部電源の正極に接続します。"
+        },
+        {
+            question: "2.0 A の一定電流を 965 秒間流した。流れた「電気量 [C]」と「電子の物質量 [mol]」の組合せを選べ（$F = 9.65 \\times 10^4\\text{ C/mol}$）。",
+            options: ["1: 1930 C / 0.020 mol", "2: 1930 C / 0.20 mol", "3: 965 C / 0.010 mol", "4: 3860 C / 0.040 mol"],
+            answer: 1,
+            explanation: "$Q = 2.0 \\times 965 = 1930\\text{ C}$。電子の物質量 $n_e = \\frac{1930}{9.65 \\times 10^4} = 0.020\\text{ mol}$ です。"
+        },
+        {
+            question: "硫酸銅(II)水溶液を「白金電極」で電気分解したとき、陰極で起こる主反応を選べ。",
+            options: ["1: \\(2\\text{H}_2\\text{O} \\rightarrow \\text{O}_2 + 4\\text{H}^+ + 4\\text{e}^-\\)", "2: \\(\\text{Cu}^{2+} + 2\\text{e}^- \\rightarrow \\text{Cu}\\)", "3: \\(2\\text{H}^+ + 2\\text{e}^- \\rightarrow \\text{H}_2\\)", "4: \\(4\\text{OH}^- \\rightarrow \\text{O}_2 + 2\\text{H}_2\\text{O} + 4\\text{e}^-\\)"],
+            answer: 2,
+            explanation: "陰極では水素よりイオン化傾向の小さい $\text{Cu}^{2+}$ が優先的に還元析出します。"
+        },
+        {
+            question: "希硫酸を「白金電極」で電気分解したとき、陽極で発生する気体とその反応式を選べ。",
+            options: ["1: 水素（\\(2\\text{H}^+ + 2\\text{e}^- \\rightarrow \\text{H}_2\\)）", "2: 酸素（\\(2\\text{H}_2\\text{O} \\rightarrow \\text{O}_2 + 4\\text{H}^+ + 4\\text{e}^-\\)）", "3: 二酸化硫黄", "4: 酸素（\\(4\\text{OH}^- \\rightarrow \\text{O}_2 + 2\\text{H}_2\\text{O} + 4\\text{e}^-\\)）"],
+            answer: 2,
+            explanation: "陽極では水分子が酸化されて酸素ガスが発生します。"
+        },
+        {
+            question: "イオン交換膜法による食塩水の電気分解で、陽極室と陰極室を隔てる「陽イオン交換膜」を通過するイオンを選べ。",
+            options: ["1: \\(\\text{Cl}^-\\)", "2: \\(\\text{OH}^-\\)", "3: \\(\\text{Na}^+\\)", "4: \\(\\text{SO}_4^{2-}\\)"],
+            answer: 3,
+            explanation: "陽イオン交換膜は陽イオン（$\text{Na}^+$）のみを透過させ、陰極室で $\text{NaOH}$ を生成します。"
+        },
+        {
+            question: "リン酸形燃料電池（酸性電解質）の「負極」に供給される物質と反応式を選べ。",
+            options: ["1: 酸素 / \\(\\text{O}_2 + 4\\text{H}^+ + 4\\text{e}^- \\rightarrow 2\\text{H}_2\\text{O}\\)", "2: 水素 / \\(\\text{H}_2 \\rightarrow 2\\text{H}^+ + 2\\text{e}^-\\)", "3: 水素 / \\(\\text{H}_2 + 2\\text{OH}^- \\rightarrow 2\\text{H}_2\\text{O} + 2\\text{e}^-\\)", "4: メタノール"],
+            answer: 2,
+            explanation: "負極には燃料の水素が供給され、$\text{H}_2 \rightarrow 2\text{H}^+ + 2\text{e}^-$ の酸化反応が起こります。"
+        },
+        {
+            question: "銅の電解精錬において、粗銅（不純物を含む銅）をつなぐべき電極と、下部に沈殿する「陽極スライム」に含まれる金属を選べ。",
+            options: ["1: 陰極 / Fe, Zn", "2: 陽極 / Ag, Au", "3: 陽極 / Fe, Ni", "4: 陰極 / Pt, Au"],
+            answer: 2,
+            explanation: "粗銅は陽極につなぎます。銅よりイオン化傾向が小さい銀・金は溶けずにスライムとして沈殿します。"
+        },
+        {
+            question: "ボルタ電池で起電力が急速に低下する現象（分極）の原因物質と、それを防ぐ「減極剤」の組合せを選べ。",
+            options: ["1: \\(\\text{Zn}^{2+}\\) / 硫酸", "2: \\(\\text{H}_2\\) / 過酸化水素水（または \\(\\text{MnO}_2\\)）", "3: \\(\\text{O}_2\\) / 亜鉛", "4: \\(\\text{Cu}^{2+}\\) / 銅"],
+            answer: 2,
+            explanation: "正極に発生した $\text{H}_2$ 気体が逆起電力を生みます。これを酸化して水に戻す過酸化水素等を減極剤とします。"
+        },
+        {
+            question: "硝酸銀水溶液を銅電極で電気分解した。0.10 mol の電子が流れたときの「陽極」の質量変化を選べ（$\text{Cu} = 64$）。",
+            options: ["1: 3.2 g 減少", "2: 6.4 g 減少", "3: 10.8 g 増加", "4: 変化なし"],
+            answer: 1,
+            explanation: "陽極の銅が $\text{Cu} \rightarrow \text{Cu}^{2+} + 2\text{e}^-$ により $0.050\text{ mol}$ 溶け出すため、$64 \times 0.050 = 3.2\text{ g}$ 減少します。"
+        }
+    ],
+
+    // 【章6】反応速度と化学発光・触媒
+    6: [
+        {
+            question: "反応 $\\text{A} \\rightarrow \\text{B}$ において、時間 $\\Delta t$ の間に A の濃度が $\\Delta [\\text{A}]$ 変化した。A の減少速度 $v$ を表す正しい式を選べ。",
+            options: ["1: \\(v = \\frac{\\Delta [\\text{A}]}{\\Delta t}\\)", "2: \\(v = -\\frac{\\Delta [\\text{A}]}{\\Delta t}\\)", "3: \\(v = \\Delta [\\text{A}] \\cdot \\Delta t\\)", "4: \\(v = -\\Delta [\\text{A}] \\cdot \\Delta t\\)"],
+            answer: 2,
+            explanation: "反応物の濃度変化 $\Delta [\text{A}]$ は負になるため、正の速度で表すためにマイナス符号をつけます。"
+        },
+        {
+            question: "反応の速度式が $v = k[\\text{A}][\\text{B}]^2$ で表されるとき、A の濃度を2倍、B の濃度を3倍にすると、反応速度 $v$ は何倍になるか。",
+            options: ["1: 6倍", "2: 12倍", "3: 18倍", "4: 36倍"],
+            answer: 3,
+            explanation: "$v' = k (2[\text{A}]) (3[\text{B}])^2 = 18 \cdot k[\text{A}][\text{B}]^2$ となり 18 倍になります。"
+        },
+        {
+            question: "触媒を反応系に添加したときの影響に関する記述として【正しいもの】を選べ。",
+            options: ["1: 反応エンタルピー $\\Delta H$ が小さくなる。", "2: 活性化エネルギーが小さくなり、反応速度が大きくなる。", "3: 逆反応の活性化エネルギーは変化しない。", "4: 生成物の最終的な収量が増大する。"],
+            answer: 2,
+            explanation: "触媒は活性化エネルギーの低い経路を提供して速度を上げます。$\Delta H$ や最終収量は変化しません。"
+        },
+        {
+            question: "温度を上げると反応速度が著しく大きくなる主たる理由を選べ。",
+            options: ["1: 活性化エネルギーそのものが低下するため。", "2: 活性化エネルギー以上のエネルギーをもつ分子の割合が急激に増えるため。", "3: 分子の大きさが膨張するため。", "4: 反応エンタルピーが増大するため。"],
+            answer: 2,
+            explanation: "温度上昇により活性化エネルギーを超えるエネルギーをもつ分子の割合が急増するためです。"
+        },
+        {
+            question: "エノキタケや酸化マンガン(IV)を過酸化水素水に加えると酸素が発生する。各触媒の分類を選べ。",
+            options: ["1: エノキタケ：無機触媒 / 酸化マンガン：酵素", "2: エノキタケ：酵素（カタラーゼ） / 酸化マンガン：無機触媒", "3: ともに無機触媒", "4: ともに酵素"],
+            answer: 2,
+            explanation: "生体由来の過酸化水素分解酵素は「カタラーゼ」で、酸化マンガン(IV)は無機触媒です。"
+        },
+        {
+            question: "1次反応 $\\text{A} \\rightarrow \\text{B}$（$v = k[\\text{A}]$）で、$[\\text{A}] = 0.20\\text{ mol/L}$ のとき $v = 0.040\\text{ mol/(L}\\cdot\\text{s)}$ であった。速度定数 $k$ を選べ。",
+            options: ["1: 0.20 /s", "2: 0.20 L/(mol·s)", "3: 5.0 /s", "4: 0.008 mol/L"],
+            answer: 1,
+            explanation: "$k = \\frac{v}{[\text{A}]} = \\frac{0.040}{0.20} = 0.20\\text{ /s}$ です。"
+        },
+        {
+            question: "【グラフ問題】画像「反応速度と濃度」を参照。1次反応における「半減期」に関する記述として正しいものを選べ。",
+            image: "image_1.png",
+            options: ["1: 初期濃度が大きいほど半減期は長くなる。", "2: 濃度が 1/2 になる時間と、さらに 1/4 になる時間は等しい（半減期一定）。", "3: 接線の傾き（瞬間速度）は時間が経過しても変化しない。", "4: 温度を上げても半減期は変化しない。"],
+            answer: 2,
+            explanation: "1次反応の半減期 $t_{1/2} = \\frac{\\ln 2}{k}$ は初期濃度に関係なく常に一定です。"
+        },
+        {
+            question: "ルミノール反応などの「化学発光」における光エネルギーの由来を選べ。",
+            options: ["1: 熱エネルギーが直接光に変化する。", "2: 化学反応で励起状態になった分子が基底状態に戻る際に放つエネルギー。", "3: 触媒が吸収した紫外線。", "4: 溶媒の蒸発熱。"],
+            answer: 2,
+            explanation: "化学反応により生成した励起状態の分子が基底状態に戻る際に差額エネルギーを光として放出します。"
+        },
+        {
+            question: "自動車の排気ガス浄化に用いられる「三元触媒（プラチナ等）」の触媒としての分類を選べ。",
+            options: ["1: 均一系触媒", "2: 不均一系触媒（固体触媒）", "3: 酵素触媒", "4: 錯体触媒"],
+            answer: 2,
+            explanation: "気体に対して固体の金属表面で反応を促進するため「不均一系触媒」に分類されます。"
+        },
+        {
+            question: "化学反応の過程で、結合の組み替えを行う極めてエネルギーの高い中間状態を何と呼ぶか。",
+            options: ["1: 活性錯体（遷移状態）", "2: 触媒中間体", "3: ラジカル", "4: 錯イオン"],
+            answer: 1,
+            explanation: "反応進行のエネルギーの山頂に位置する最も高エネルギーな状態を「活性錯体」と呼びます。"
+        }
+    ],
+
+    // 【章7】化学平衡とルシャトリエの原理
+    7: [
+        {
+            question: "化学平衡状態に関する記述として【正しいもの】を選べ。",
+            options: ["1: 正反応も逆反応も完全に停止した状態。", "2: 正反応速度と逆反応速度が等しくなり、見かけ上反応が止まって見える状態。", "3: 反応物と生成物のモル濃度が必ず等しくなった状態。", "4: 触媒を加えたときのみ到達する状態。"],
+            answer: 2,
+            explanation: "化学平衡は動的平衡であり、正反応と逆反応の速度が等しく保たれている状態です。"
+        },
+        {
+            question: "$\\text{N}_2(\\text{気}) + 3\\text{H}_2(\\text{気}) \\rightleftarrows 2\\text{NH}_3(\\text{気})$ の容器を「圧縮して高圧にした」ときの平衡移動の向きを選べ。",
+            options: ["1: 気体分子数が減る方向（右・正反応方向）", "2: 気体分子数が増える方向（左・逆反応方向）", "3: 移動しない", "4: 判定不能"],
+            answer: 1,
+            explanation: "高圧にすると、圧力を下げるために気体分子数が減る方向（左辺4分子 $\rightarrow$ 右辺2分子の右向き）に移動します。"
+        },
+        {
+            question: "$\\text{N}_2 + 3\\text{H}_2 \\rightleftarrows 2\\text{NH}_3 \\quad \\Delta H = -92\\text{ kJ}$ において、アンモニアの収率を上げる条件を選べ。",
+            options: ["1: 高温・高圧", "2: 低温・高圧", "3: 高温・低圧", "4: 低温・低圧"],
+            answer: 2,
+            explanation: "右向き（発熱）に動かすため「低温」、気体分子数を減らすため「高圧」にするのが正解です。"
+        },
+        {
+            question: "反応 $a\\text{A} + b\\text{B} \\rightleftarrows c\\text{C} + d\\text{D}$ における濃度平衡定数 $K_c$ の正しい定義式を選べ。",
+            options: ["1: \\(K_c = \\frac{[\\text{A}]^a [\\text{B}]^b}{[\\text{C}]^c [\\text{D}]^d}\\)", "2: \\(K_c = \\frac{[\\text{C}]^c [\\text{D}]^d}{[\\text{A}]^a [\\text{B}]^b}\\)", "3: \\(K_c = [\\text{A}]^a [\\text{B}]^b [\\text{C}]^c [\\text{D}]^d\\)", "4: \\(K_c = \\frac{[\\text{C}][\\text{D}]}{[\\text{A}][\\text{B}]}\\)"],
+            answer: 2,
+            explanation: "平衡定数は「（生成物の濃度の係数乗の積） $\div$ （反応物の濃度の係数乗の積）」で表します。"
+        },
+        {
+            question: "化学平衡定数 $K$ の値を変化させる唯一の要因を選べ。",
+            options: ["1: 濃度の変更", "2: 全圧の変更", "3: 触媒の有無", "4: 温度の変更"],
+            answer: 4,
+            explanation: "平衡定数 $K$ は「温度」のみによって変化します。濃度や圧力を変えても $K$ 自体は変わりません。"
+        },
+        {
+            question: "圧平衡定数 $K_p$ と濃度平衡定数 $K_c$ の関係式（分子数変化 $\\Delta n$）として正しいものを選べ。",
+            options: ["1: \\(K_p = K_c (RT)^{\\Delta n}\\)", "2: \\(K_p = \\frac{K_c}{RT}\\)", "3: \\(K_p = K_c + RT\\)", "4: \\(K_p = K_c\\) （常に等しい）"],
+            answer: 1,
+            explanation: "状態方程式 $P = C R T$ より、$K_p = K_c (RT)^{\Delta n}$ となります。"
+        },
+        {
+            question: "固体の熱分解 $\\text{CaCO}_3(\\text{固}) \\rightleftarrows \\text{CaO}(\\text{固}) + \\text{CO}_2(\\text{気})$ の圧平衡定数 $K_p$ を表す正しい式を選べ。",
+            options: ["1: \\(K_p = \\frac{P_{\\text{CaO}} \\cdot P_{\\text{CO}_2}}{P_{\\text{CaCO}_3}}\\)", "2: \\(K_p = P_{\\text{CO}_2}\\)", "3: \\(K_p = \\frac{1}{P_{\\text{CO}_2}}\\)", "4: \\(K_p = P_{\\text{CaCO}_3} \\cdot P_{\\text{CO}_2}\\)"],
+            answer: 2,
+            explanation: "純粋な固体の濃度（密度）は一定とみなすため式から除外します。$K_p = P_{\text{CO}_2}$ となります。"
+        },
+        {
+            question: "ピストン付き容器内で平衡 $\\text{N}_2 + 3\\text{H}_2 \\rightleftarrows 2\\text{NH}_3$ にある時、「全圧一定」のまま Ar を加えた。平衡の移動向きを選べ。",
+            options: ["1: 正反応方向（右）", "2: 逆反応方向（左）", "3: 移動しない", "4: 判定不能"],
+            answer: 2,
+            explanation: "全圧一定で Ar を入れると体積が増えて各分圧が低下します。分圧低下を補うため気体分子数が増える左向きに移動します。"
+        },
+        {
+            question: "ハーバー・ボッシュ法において採用されている一般的な工業条件を選べ。",
+            options: ["1: 常温・常圧", "2: 約 400〜500℃・高圧（約 20〜100 MPa）", "3: 約 1000℃・低圧", "4: 氷冷下・高圧"],
+            answer: 2,
+            explanation: "理論上は低温・高圧が有利ですが、反応速度を維持するために 400〜500℃・高圧が妥協点として採用されています。"
+        },
+        {
+            question: "酢酸とエタノールから酢酸エチルを作る反応で、エステルの「収率」を上げる操作として【誤っているもの】を選べ。",
+            options: ["1: エタノールを過剰に加える。", "2: 生成する水を濃硫酸で取り除く。", "3: 濃硫酸を触媒として加える。", "4: 酢酸エチルを留去しながら反応させる。"],
+            answer: 3,
+            explanation: "触媒（濃硫酸）は平衡到達時間を短縮するのみで、収率（平衡の位置）自体は変化させません。"
+        }
+    ],
+
+    // 【章8】電離平衡と溶解度積
+    8: [
+        {
+            question: "濃度 $C\\text{ [mol/L]}$、電離度 $\\alpha$ の弱酸 $\\text{HA}$（$\\alpha \\ll 1$）の電離定数を $K_a$ とするとき、$[\\text{H}^+]$ を表す近似式を選べ。",
+            options: ["1: \\([\\text{H}^+] = C K_a\\)", "2: \\([\\text{H}^+] = \\sqrt{C K_a}\\)", "3: \\([\\text{H}^+] = \\frac{K_a}{C}\\)", "4: \\([\\text{H}^+] = \\sqrt{\\frac{K_a}{C}}\\)"],
+            answer: 2,
+            explanation: "$\\alpha \\approx \\sqrt{\\frac{K_a}{C}}$ より、$[\text{H}^+] = C\alpha = \\sqrt{C K_a}$ となります。"
+        },
+        {
+            question: "弱酸の水溶液を水で薄めて（濃度 $C$ を小さくして）いくと、電離度 $\\alpha$ の値はどう変化するか。",
+            options: ["1: 大きくなる（1に近づく）", "2: 小さくなる（0に近づく）", "3: 変化しない", "4: 一度小さくなってから大きくなる"],
+            answer: 1,
+            explanation: "オストワルトの希釈律 $\\alpha \\approx \\sqrt{\\frac{K_a}{C}}$ より、希釈する（$C$ が小さくなる）と電離度 $\\alpha$ は大きくなります。"
+        },
+        {
+            question: "25℃ における水のイオン積 $K_w = [\\text{H}^+][\\text{OH}^-]$ の値として正しいものを選べ。",
+            options: ["1: \\(1.0 \\times 10^{-7}\\text{ (mol/L)}^2\\)", "2: \\(1.0 \\times 10^{-14}\\text{ (mol/L)}^2\\)", "3: \\(1.0 \\times 10^{-1}\\text{ (mol/L)}^2\\)", "4: 温度に関わらず不変"],
+            answer: 2,
+            explanation: "25℃ における水のイオン積は $1.0 \\times 10^{-14}\\text{ (mol/L)}^2$ です。"
+        },
+        {
+            question: "酢酸ナトリウム水溶液が弱塩基性を示す理由（加水分解反応）を表す正しい式を選べ。",
+            options: ["1: \\(\\text{Na}^+ + \\text{H}_2\\text{O} \\rightarrow \\text{NaOH} + \\text{H}^+\\)", "2: \\(\\text{CH}_3\\text{COO}^- + \\text{H}_2\\text{O} \\rightleftarrows \\text{CH}_3\\text{COOH} + \\text{OH}^-\\)", "3: \\(\\text{CH}_3\\text{COO}^- + \\text{H}^+ \\rightleftarrows \\text{CH}_3\\text{COOH}\\)", "4: \\(\\text{Na}^+ + \\text{OH}^- \\rightarrow \\text{NaOH}\\)"],
+            answer: 2,
+            explanation: "弱酸の陰イオン $\text{CH}_3\text{COO}^-$ が水から $\text{H}^+$ を奪い、$\text{OH}^-$ を放出するため弱塩基性を示します。"
+        },
+        {
+            question: "酢酸と酢酸ナトリウムの混合液（緩衝液）に少量の酸（$\\text{H}^+$）を加えたとき、$\\text{H}^+$ を消費して pH 変化を抑える粒子を選べ。",
+            options: ["1: \\(\\text{CH}_3\\text{COOH}\\)", "2: \\(\\text{CH}_3\\text{COO}^-\\)", "3: \\(\\text{Na}^+\\)", "4: \\(\\text{H}_2\\text{O}\\)"],
+            answer: 2,
+            explanation: "多量に存在する $\text{CH}_3\text{COO}^-$ が加えた $\text{H}^+$ と反応して $\text{CH}_3\text{COOH}$ に変化するため pH が保たれます。"
+        },
+        {
+            question: "【グラフ問題】画像「中和滴定曲線」を参照。「弱酸」を「強塩基」で滴定した際の中和点の液性と、使用すべき指示薬を選べ。",
+            image: "image_1.png",
+            options: ["1: 中和点は酸性 / メチルオレンジ", "2: 中和点は中性 / メチルオレンジ", "3: 中和点は弱塩基性 / フェノールフタレイン", "4: 中和点は強塩基性 / リトマス紙"],
+            answer: 3,
+            explanation: "弱酸＋強塩基の中和点は加水分解により弱塩基性（pH > 7）になるため、フェノールフタレインを使用します。"
+        },
+        {
+            question: "難溶性塩 $\\text{AgCl}$ の飽和水溶液における溶解度積 $K_{sp}$ の正しい定義式を選べ。",
+            options: ["1: \\(K_{sp} = \\frac{[\\text{Ag}^+][\\text{Cl}^-]}{[\\text{AgCl}]}\\)", "2: \\(K_{sp} = [\\text{Ag}^+][\\text{Cl}^-]\\)", "3: \\(K_{sp} = [\\text{Ag}^+] + [\\text{Cl}^-]\\)", "4: \\(K_{sp} = \\frac{1}{[\\text{Ag}^+][\text{Cl}^-]}\\)"],
+            answer: 2,
+            explanation: "飽和溶液中のイオン濃度の積 $K_{sp} = [\text{Ag}^+][\text{Cl}^-]$ で定義します。"
+        },
+        {
+            question: "硝酸銀水溶液と食塩水を混合した。沈殿 $\\text{AgCl}$ が発生し始める条件を表す式を選べ。",
+            options: ["1: \\([\\text{Ag}^+][\\text{Cl}^-] < K_{sp}\\)", "2: \\([\\text{Ag}^+][\\text{Cl}^-] = 0\\)", "3: \\([\\text{Ag}^+][\\text{Cl}^-] > K_{sp}\\)", "4: \\([\\text{Ag}^+] = [\\text{Cl}^-]\\)"],
+            answer: 3,
+            explanation: "溶液中のイオンの積が溶解度積 $K_{sp}$ を超えた瞬間に沈殿が発生します。"
+        },
+        {
+            question: "$\\text{AgCl}$ の飽和水溶液に NaCl を加えると $\\text{AgCl}$ の沈殿量が増加した。この現象を何と呼ぶか。",
+            options: ["1: 塩析", "2: 共通イオン効果", "3: 凝集", "4: 錯塩形成"],
+            answer: 2,
+            explanation: "共通のイオン（$\text{Cl}^-$）を加えることで平衡が沈殿側に移動する現象を「共通イオン効果」と呼びます。"
+        },
+        {
+            question: "$\\text{Zn}^{2+}$ と $\\text{Cu}^{2+}$ を含む水溶液に $\\text{H}_2\\text{S}$ を通じた時、酸性で $\\text{CuS}$ のみが沈殿する理由を選べ。",
+            options: ["1: CuS の溶解度積 \\(K_{sp}\\) が ZnS より著しく小さいから。", "2: 酸性下では \\(\\text{Cu}^{2+}\\) の電離度があがるから。", "3: ZnS は酸と激しく反応して爆発するから。", "4: CuS は錯イオンを作るから。"],
+            answer: 1,
+            explanation: "$\text{CuS}$ の $K_{sp}$ は極めて小さいため、酸性下で低く抑えられた $\text{S}^{2-}$ 濃度でも超えて沈殿します。"
+        }
+    ]
+};
+
+// --- アプリ制御ロジック ---
+let currentChapter = 0;
+let currentQuestionIndex = 0;
+let score = 0;
+let isAnswered = false;
+
+function startQuiz(chapterId) {
+    currentChapter = chapterId;
+    currentQuestionIndex = 0;
+    score = 0;
+    document.getElementById('setup-screen').classList.remove('active');
+    document.getElementById('quiz-screen').classList.add('active');
+    showQuestion();
+}
+
+function showQuestion() {
+    isAnswered = false;
+    const questionData = quizData[currentChapter][currentQuestionIndex];
+    document.getElementById('progress').innerText = `第 ${currentChapter} 章 ： 問題 ${currentQuestionIndex + 1} / 10`;
+    document.getElementById('question-text').innerText = questionData.question;
+    
+    // 画像制御
+    const imageEl = document.getElementById('question-image');
+    if (questionData.image) {
+        imageEl.src = questionData.image;
+        imageEl.style.display = 'block';
+    } else {
+        imageEl.style.display = 'none';
+    }
+
+    // 数式表示更新
+    if (window.MathJax) {
+        MathJax.typesetPromise();
+    }
+
+    // 選択肢ボタン描画
+    const optionsContainer = document.getElementById('options-container');
+    optionsContainer.innerHTML = '';
+    questionData.options.forEach((option, index) => {
+        const button = document.createElement('button');
+        button.className = 'option-btn';
+        button.innerText = option;
+        button.onclick = () => checkAnswer(index + 1, button);
+        optionsContainer.appendChild(button);
+    });
+
+    document.getElementById('explanation').style.display = 'none';
+    document.getElementById('next-btn').style.display = 'none';
+}
+
+function checkAnswer(selectedOption, clickedButton) {
+    if (isAnswered) return;
+    isAnswered = true;
+    const questionData = quizData[currentChapter][currentQuestionIndex];
+    const correctOption = questionData.answer;
+
+    if (selectedOption === correctOption) {
+        clickedButton.classList.add('correct');
+        score++;
+    } else {
+        clickedButton.classList.add('wrong');
+        const buttons = document.querySelectorAll('.option-btn');
+        buttons[correctOption - 1].classList.add('correct');
+    }
+
+    document.getElementById('explanation').innerHTML = `<strong>【解説】</strong><br>${questionData.explanation}`;
+    document.getElementById('explanation').style.display = 'block';
+    document.getElementById('next-btn').style.display = 'block';
+
+    if (window.MathJax) {
+        MathJax.typesetPromise();
+    }
+
+    if (currentQuestionIndex === quizData[currentChapter].length - 1) {
+        document.getElementById('next-btn').innerText = '結果を見る';
+    } else {
+        document.getElementById('next-btn').innerText = '次の問題へ';
+    }
+}
+
+function nextQuestion() {
+    currentQuestionIndex++;
+    if (currentQuestionIndex < quizData[currentChapter].length) {
+        showQuestion();
+    } else {
+        showResult();
+    }
+}
+
+function showResult() {
+    document.getElementById('quiz-screen').classList.remove('active');
+    document.getElementById('result-screen').classList.add('active');
+    document.getElementById('score-text').innerText = `第 ${currentChapter} 章：10問中 ${score} 問正解！`;
+}
+
+function backToSetup() {
+    document.getElementById('result-screen').classList.remove('active');
+    document.getElementById('setup-screen').classList.add('active');
+}
+</script>
+
+</body>
+</html>
